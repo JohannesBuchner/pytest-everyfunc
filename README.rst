@@ -11,11 +11,13 @@ checking in code that adds functions without tests.
 
 Installation
 ------------
+
 ::
-    $ pip install pytest-everyfunc pytest-cov coverage
+    $ pip install pytest-everyfunc
 
 Usage
 -----
+
 :: 
     $ pytest --cov=mypackage --fail-on-untested
     ...

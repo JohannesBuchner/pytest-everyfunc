@@ -4,10 +4,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pytest-everyfunc"
-version = "0.1.0"
+version = "0.1.1"
 description = "A pytest plugin to detect completely untested functions using coverage"
 authors = [{name = "Johannes Buchner", email = "johannes.buchner.acad@gmx.com"}]
-dependencies = ["pytest", "coverage"]
+dependencies = ["pytest", "coverage", "pytest-cov"]
+readme = "README.rst"
+license = "BSD-2-Clause"
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Testing",
+  "Programming Language :: Python :: 3",
+]
+[project.urls]
+Homepage = "https://github.com/JohannesBuchner/pytest-everyfunc"
+Documentation = "https://github.com/JohannesBuchner/pytest-everyfunc"
+Repository = "https://github.com/JohannesBuchner/pytest-everyfunc"
+Issues = "https://github.com/JohannesBuchner/pytest-everyfunc/issues"
 
 [project.entry-points.pytest11]
 pytest_everyfunc = "pytest_everyfunc.plugin"
