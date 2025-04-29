@@ -1,10 +1,12 @@
 import ast
-import io
 import os
-import subprocess
 import sys
-import tomllib
+from io import StringIO
+from pathlib import Path
 from typing import List, Tuple
+
+import coverage
+import pytest
 
 
 def parse_missed_lines(missing_str: str) -> List[int]:
@@ -143,50 +145,47 @@ def find_never_called_functions(file = sys.stdin, source_root: str = "."):
 
     return never_called
 
-def read_package_name_from_pyproject() -> str:
-    """Get the python package name.
-
-    Returns
-    -------
-    package_name: str
-        name of the python package
-    """
-    with open("pyproject.toml", "rb") as f:
-        data = tomllib.load(f)
-    return data["project"]["name"].replace("-", "_")
-
-def run_coverage_and_capture(package: str) -> str:
-    """Run coverage and pytest programmatically, return coverage report output.
+def pytest_addoption(parser):
+    """Add our option to pytest.
 
     Parameters
     ----------
-    package: str
-        name of the python package
-
-    Returns
-    -------
-    stream: object
-        input stream
+    parser: object
+        pytest parser
     """
-    subprocess.run(["python3", "-m", "coverage", "run", "-m", "pytest"], check=True)
-    result = subprocess.run(
-        ["python3", "-m", "coverage", "report", f"--include={package}/*", "-m"],
-        check=True,
-        stdout=subprocess.PIPE,
-        text=True
+    parser.addoption(
+        "--fail-on-untested", action="store_true", default=False,
+        help="Fail tests if completely untested functions are found."
     )
-    return result.stdout
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2 or sys.argv[1] != "-":
-        package = read_package_name_from_pyproject()
-        report = run_coverage_and_capture(package)
-        from io import StringIO
-        results = find_never_called_functions(StringIO(report))
-    else:
-        results = find_never_called_functions(sys.stdin)
-    for filename, name, funcloc in results:
-        sys.stderr.write(f"{filename}:{funcloc}: untested: {name}\n")
-    if len(results) > 0:
-        sys.stderr.write(f"Error: untested functions found!\n")
-        sys.exit(1)
+def pytest_sessionfinish(session, exitstatus):
+    """Run when pytest is done.
+
+    Parameters
+    ----------
+    session: object
+        pytest session
+    exitstatus: int
+        Exit status.
+    """
+    cov_file = Path(".coverage")
+    if not cov_file.exists():
+        session.config.warn("COV001", "No .coverage file found, skipping untested function check.")
+        return
+
+    cov = coverage.Coverage()
+    cov.load()
+
+    report_output = StringIO()
+    cov.report(file=report_output, show_missing=True)
+    report_output.seek(0)
+
+    untested = find_never_called_functions(report_output)
+
+    if untested:
+        for filename, name, lineno in untested:
+            sys.stderr.write(f"{filename}:{lineno}: untested function: {name}\n")
+
+        if session.config.getoption("--fail-on-untested"):
+            pytest.exit("Untested functions found.", 32)
+
