@@ -1,11 +1,22 @@
 import ast
 import os
-import re
-from typing import List, Tuple
 import sys
+from typing import List, Tuple
 
 
 def parse_missed_lines(missing_str: str) -> List[int]:
+    """Parse lines missing in coverage.
+
+    Parameters
+    ----------
+    missing_str: str
+        '<num>-<num>' or '<num>'
+
+    Returns
+    -------
+    lines: list
+        integers in the range
+    """
     lines = []
     for part in missing_str.split(","):
         if "-" in part:
@@ -17,6 +28,18 @@ def parse_missed_lines(missing_str: str) -> List[int]:
 
 
 def parse_coverage_report(file) -> dict:
+    """Parse output of "coverage report -m"
+
+    Parameters
+    ----------
+    file: object
+        input stream
+
+    Returns
+    -------
+    missed_by_file: dict
+        list of lines for each file
+    """
     missed_by_file = {}
     file.readline()
     sepline = file.readline()
@@ -33,6 +56,18 @@ def parse_coverage_report(file) -> dict:
 
 
 def get_functions_from_file(filepath: str) -> List[Tuple[str, int, int]]:
+    """Get list of python functions.
+
+    Parameters
+    ----------
+    filepath: str
+        path to python script
+
+    Returns
+    -------
+    functions: list
+        list of functions and their lines.s
+    """
     with open(filepath, "r") as f:
         source = f.read()
 
@@ -41,6 +76,13 @@ def get_functions_from_file(filepath: str) -> List[Tuple[str, int, int]]:
 
     class FuncVisitor(ast.NodeVisitor):
         def visit_FunctionDef(self, node):
+            """Visit a function node.
+
+            Parameters
+            ----------
+            node: object
+                ast node.
+            """
             funcloc = node.lineno
             code_lines = []
             for child in node.body:
@@ -54,13 +96,34 @@ def get_functions_from_file(filepath: str) -> List[Tuple[str, int, int]]:
             self.generic_visit(node)
 
         def visit_AsyncFunctionDef(self, node):
+            """Visit a async function.
+
+            Parameters
+            ----------
+            node: object
+                ast node.
+            """
             self.visit_FunctionDef(node)
 
     FuncVisitor().visit(tree)
     return functions
 
 
-def find_never_called_functions(file, source_root: str = "."):
+def find_never_called_functions(file = sys.stdin, source_root: str = "."):
+    """Find functions not covered by tests.
+
+    Parameters
+    ----------
+    file: object
+        input stream
+    source_root: str
+        path where files are.
+
+    Returns
+    -------
+    never_called: list
+        list of filename, function name and location tuples.
+    """
     missed_by_file = parse_coverage_report(file)
     never_called = []
 
@@ -79,6 +142,6 @@ def find_never_called_functions(file, source_root: str = "."):
 
 
 if __name__ == "__main__":
-    results = find_never_called_functions(sys.stdin, '.')
+    results = find_never_called_functions()
     for filename, name, funcloc in results:
         sys.stderr.write(f"{filename}:{funcloc}: untested: {name}\n")
