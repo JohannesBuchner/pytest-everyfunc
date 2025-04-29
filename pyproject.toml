@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pytest-everyfunc"
+version = "0.1.0"
+description = "A pytest plugin to detect completely untested functions using coverage"
+authors = [{name = "Johannes Buchner", email = "johannes.buchner.acad@gmx.com"}]
+dependencies = ["pytest", "coverage"]
+
+[project.entry-points.pytest11]
+pytest_everyfunc = "pytest_everyfunc.plugin"
