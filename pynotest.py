@@ -1,6 +1,9 @@
 import ast
+import io
 import os
+import subprocess
 import sys
+import tomllib
 from typing import List, Tuple
 
 
@@ -140,8 +143,50 @@ def find_never_called_functions(file = sys.stdin, source_root: str = "."):
 
     return never_called
 
+def read_package_name_from_pyproject() -> str:
+    """Get the python package name.
+
+    Returns
+    -------
+    package_name: str
+        name of the python package
+    """
+    with open("pyproject.toml", "rb") as f:
+        data = tomllib.load(f)
+    return data["project"]["name"].replace("-", "_")
+
+def run_coverage_and_capture(package: str) -> str:
+    """Run coverage and pytest programmatically, return coverage report output.
+
+    Parameters
+    ----------
+    package: str
+        name of the python package
+
+    Returns
+    -------
+    stream: object
+        input stream
+    """
+    subprocess.run(["python3", "-m", "coverage", "run", "-m", "pytest"], check=True)
+    result = subprocess.run(
+        ["python3", "-m", "coverage", "report", f"--include={package}/*", "-m"],
+        check=True,
+        stdout=subprocess.PIPE,
+        text=True
+    )
+    return result.stdout
 
 if __name__ == "__main__":
-    results = find_never_called_functions()
+    if len(sys.argv) < 2 or sys.argv[1] != "-":
+        package = read_package_name_from_pyproject()
+        report = run_coverage_and_capture(package)
+        from io import StringIO
+        results = find_never_called_functions(StringIO(report))
+    else:
+        results = find_never_called_functions(sys.stdin)
     for filename, name, funcloc in results:
         sys.stderr.write(f"{filename}:{funcloc}: untested: {name}\n")
+    if len(results) > 0:
+        sys.stderr.write(f"Error: untested functions found!\n")
+        sys.exit(1)
