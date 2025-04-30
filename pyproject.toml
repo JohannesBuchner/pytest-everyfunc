@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pytest-everyfunc"
-version = "0.1.2"
+version = "0.1.3"
 description = "A pytest plugin to detect completely untested functions using coverage"
 authors = [{name = "Johannes Buchner", email = "johannes.buchner.acad@gmx.com"}]
 dependencies = ["pytest", "coverage", "pytest-cov"]
