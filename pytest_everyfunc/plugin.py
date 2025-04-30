@@ -184,7 +184,6 @@ def pytest_sessionfinish(session, exitstatus):
     """
     cov_file = Path(".coverage")
     if not cov_file.exists():
-        session.config.warn("COV001", "No .coverage file found, skipping untested function check.")
         return
 
     cov = coverage.Coverage()
